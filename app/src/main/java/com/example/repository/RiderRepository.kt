@@ -35,17 +35,24 @@ class RiderRepository {
         }
     }
 
-    suspend fun updateLocation(phone: String, lat: Double, lon: Double): Result<Unit> {
+    suspend fun updateLocation(riderId: String?, phone: String, lat: Double, lon: Double): Result<Unit> {
         val client = SupabaseManager.getClient()
             ?: return Result.failure(IllegalStateException("Supabase client is not connected"))
 
         return try {
+            val trimmedId = riderId?.trim()
+            val trimmedPhone = phone.trim()
+
             client.from("riders").update({
                 set("current_latitude", lat)
                 set("current_longitude", lon)
             }) {
                 filter {
-                    eq("phone", phone.trim())
+                    if (!trimmedId.isNullOrBlank()) {
+                        eq("id", trimmedId)
+                    } else {
+                        eq("phone", trimmedPhone)
+                    }
                 }
             }
             Result.success(Unit)

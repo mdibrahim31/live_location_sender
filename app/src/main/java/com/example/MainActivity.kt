@@ -466,7 +466,7 @@ fun TrackingContent(
                             fontSize = 16.sp
                         )
                         Text(
-                            text = "Phone: ${rider.phone}",
+                            text = "Phone: ${rider.phone ?: ""}",
                             fontSize = 13.sp,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )

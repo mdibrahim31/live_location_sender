@@ -132,7 +132,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         if (enabled) {
             val intent = Intent(context, LocationTrackingService::class.java).apply {
                 action = LocationTrackingService.ACTION_START
-                putExtra(LocationTrackingService.EXTRA_PHONE, rider.phone)
+                putExtra(LocationTrackingService.EXTRA_PHONE, rider.phone ?: "")
+                putExtra(LocationTrackingService.EXTRA_RIDER_ID, rider.id)
             }
             ContextCompat.startForegroundService(context, intent)
         } else {

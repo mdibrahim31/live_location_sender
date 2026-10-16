@@ -59,6 +59,7 @@ class LocationTrackingService : Service() {
     private lateinit var locationCallback: LocationCallback
 
     private var activePhone: String = ""
+    private var activeRiderId: String? = null
 
     override fun onCreate() {
         super.onCreate()
@@ -75,9 +76,9 @@ class LocationTrackingService : Service() {
                     current.copy(latitude = lat, longitude = lon)
                 }
 
-                if (activePhone.isNotBlank()) {
+                if (activePhone.isNotBlank() || !activeRiderId.isNullOrBlank()) {
                     serviceScope.launch {
-                        val res = repository.updateLocation(activePhone, lat, lon)
+                        val res = repository.updateLocation(activeRiderId, activePhone, lat, lon)
                         val now = System.currentTimeMillis()
                         if (res.isSuccess) {
                             TrackingStateManager.update { current ->
@@ -112,8 +113,10 @@ class LocationTrackingService : Service() {
             }
             ACTION_START -> {
                 val phone = intent?.getStringExtra(EXTRA_PHONE) ?: ""
-                if (phone.isNotBlank()) {
+                val id = intent?.getStringExtra(EXTRA_RIDER_ID)
+                if (phone.isNotBlank() || !id.isNullOrBlank()) {
                     activePhone = phone
+                    activeRiderId = id
                     startTrackingForeground()
                 }
             }
@@ -228,6 +231,7 @@ class LocationTrackingService : Service() {
         const val ACTION_START = "com.example.action.START_TRACKING"
         const val ACTION_STOP = "com.example.action.STOP_TRACKING"
         const val EXTRA_PHONE = "extra_rider_phone"
+        const val EXTRA_RIDER_ID = "extra_rider_id"
         private const val NOTIFICATION_ID = 4040
         private const val CHANNEL_ID = "rider_live_location_channel"
     }
