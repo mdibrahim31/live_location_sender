@@ -1,30 +1,56 @@
 package com.example.repository
 
-import com.example.SupabaseClient
+import com.example.SupabaseManager
 import com.example.model.Rider
 import io.github.jan.supabase.postgrest.from
 
 class RiderRepository {
-    suspend fun login(phone: String, password: String): Rider? {
-        val client = SupabaseClient.client ?: return null
-        val riders = client.from("riders").select {
-            filter {
-                eq("phone", phone)
-                eq("password", password)
+
+    suspend fun login(phone: String, password: String): Result<Rider> {
+        val client = SupabaseManager.getClient()
+            ?: return Result.failure(
+                IllegalStateException("Supabase is not configured. Please set your Supabase URL and Key.")
+            )
+
+        return try {
+            val cleanPhone = phone.trim()
+            val cleanPassword = password.trim()
+
+            val riders = client.from("riders").select {
+                filter {
+                    eq("phone", cleanPhone)
+                    eq("password", cleanPassword)
+                }
+            }.decodeList<Rider>()
+
+            val matched = riders.firstOrNull()
+            if (matched != null) {
+                Result.success(matched)
+            } else {
+                Result.failure(IllegalArgumentException("No rider found with this Phone and Password. Please check your credentials."))
             }
-        }.decodeList<Rider>()
-        return riders.firstOrNull()
+        } catch (e: Exception) {
+            val msg = e.localizedMessage ?: e.message ?: "Unknown error while connecting to Supabase"
+            Result.failure(Exception("Connection error: $msg", e))
+        }
     }
 
-    suspend fun updateLocation(riderId: Int, lat: Double, lon: Double) {
-        val client = SupabaseClient.client ?: return
-        client.from("riders").update({
-            set("current_latitude", lat)
-            set("current_longitude", lon)
-        }) {
-            filter {
-                eq("id", riderId)
+    suspend fun updateLocation(phone: String, lat: Double, lon: Double): Result<Unit> {
+        val client = SupabaseManager.getClient()
+            ?: return Result.failure(IllegalStateException("Supabase client is not connected"))
+
+        return try {
+            client.from("riders").update({
+                set("current_latitude", lat)
+                set("current_longitude", lon)
+            }) {
+                filter {
+                    eq("phone", phone.trim())
+                }
             }
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
         }
     }
 }
